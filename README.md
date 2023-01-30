@@ -9,7 +9,6 @@ This project aims to detect and track military tanks in real-time using Unmanned
 - NumPy
 - TensorFlow
 - DroneKit
-- Cython
 
 ## Installation
 1. Clone the repository to your local machine
