@@ -113,6 +113,10 @@ class Track:
     def get_class(self):
         return self.class_name
 
+    #boom added
+    def get_age(self):
+        return self._max_age
+
     def predict(self, kf):
         """Propagate the state distribution to the current time step using a
         Kalman filter prediction step.

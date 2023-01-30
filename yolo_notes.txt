@@ -1,0 +1,26 @@
+python3 save_model.py --model yolov4 
+
+python3 object_tracker.py --weights ./checkpoints/yolov4-tiny-416 --model yolov4 --video ./data/video/test.mp4 --output ./outputs/tiny.avi --tiny
+
+python3 object_tracker.py --video 1 --output ./outputs/webcam.avi --model yolov4
+
+python3 object_tracker_drone_no_screen.py --video 0 --output ./outputs/webcam.avi --model yolov4
+
+python3 object_tracker.py --video ./testvideo/tank_top_2.mp4 --output ./outputs/tanktopoutput2.avi --model yolov4
+
+python3 object_tracker.py --weights ./checkpoints/yolov4-tiny-416 --model yolov4 --video 0  --output ./outputs/webcam.avi --tiny
+
+
+#Drone kit 
+
+dronekit-sitl copter --home=17.396909,78.490124,30,0
+
+mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551
+mavproxy.py --master tcp:127.0.0.1:5760 --out 127.0.0.1:14550 --out 127.0.0.1:14551
+
+
+python3 hello.py --connect 127.0.0.1:14551
+
+python3 object_tracker_drone_no_screen.py --video 0 --output ./outputs/webcam.avi --model yolov4
+python3 object_tracker_drone_fence.py --video 0 --output ./outputs/webcam.avi --model yolov4
+python3 object_tracker3.py --video 0 --output ./outputs/webcam.avi --model yolov4

@@ -1,6 +1,9 @@
 import os
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from goprocam import GoProCamera, constants
+
+goproCamera = GoProCamera.GoPro()
 import time
 import tensorflow as tf
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
@@ -18,6 +21,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
+from Custom.coordinates import FramesToCoordinatesAndDistance
+
 # deep sort imports
 from deep_sort import preprocessing, nn_matching
 from deep_sort.detection import Detection
@@ -35,7 +40,7 @@ flags.DEFINE_string('output_format', 'XVID', 'codec used in VideoWriter when sav
 flags.DEFINE_float('iou', 0.45, 'iou threshold')
 flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_boolean('dont_show', False, 'dont show video output')
-flags.DEFINE_boolean('info', False, 'show detailed info of tracked objects')
+flags.DEFINE_boolean('info', True, 'show detailed info of tracked objects')
 flags.DEFINE_boolean('count', False, 'count objects being tracked on screen')
 
 def main(_argv):
@@ -103,6 +108,7 @@ def main(_argv):
         frame_num +=1
         print('Frame #: ', frame_num)
         frame_size = frame.shape[:2]
+#         print("frame_size",frame_size)
         image_data = cv2.resize(frame, (input_size, input_size))
         image_data = image_data / 255.
         image_data = image_data[np.newaxis, ...].astype(np.float32)
@@ -199,6 +205,18 @@ def main(_argv):
         # Call the tracker
         tracker.predict()
         tracker.update(detections)
+        
+        
+        #Boom added-----------------------------------------------------------------------
+        midx=int(frame_size[1]/2)
+        midy=int(frame_size[0]/2)
+        drone_track_id=0
+        drone_track_age=0
+        drone_track_x=0
+        drone_track_y=0
+        box_mid_y=midy
+        box_mid_x=midx
+        
 
         # update tracks
         for track in tracker.tracks:
@@ -213,14 +231,94 @@ def main(_argv):
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
             cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
-
+            
+            
+            #Boom added-------------------------------------------------------------------------
+            if(track._max_age>drone_track_age):
+                box_mid_x=(int(bbox[0])+int(bbox[2]))/2
+                box_mid_y=(int(bbox[1]) +int(bbox[3]))/2
+                drone_track_age=track._max_age
+                drone_track_id=track.track_id
+                drone_track_x=midx-box_mid_x
+                drone_track_y=midy-box_mid_y
+                
+                
         # if enable info flag then print details about each track
             if FLAGS.info:
                 print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
+#                 midx=int(frame_size[1]/2)
+#                 midy=int(frame_size[0]/2)
+#                 box_mid_x=(int(bbox[0])+int(bbox[2]))/2
+#                 box_mid_y=(int(bbox[1]) +int(bbox[3]))/2
+#                 x_axis=""
+#                 y_axis=""
+#                 if(box_mid_x>midx):
+#                     print("move_right ",box_mid_x-midx)
+#                     x_axis=f"move_right {box_mid_x-midx}"
+                
+#                 else:
+#                     print("move left ",midx-box_mid_x)
+#                     x_axis=f"move left {midx-box_mid_x}"
 
+#                 if(box_mid_y<midy):
+#                     print("move up",midy-box_mid_y)
+#                     y_axis=f"move up {midy-box_mid_y}"
+#                 else:
+#                     print("move down",box_mid_y-midy)
+#                     y_axis=f"move down {box_mid_y-midy}"
+
+#                 cv2.putText(frame, x_axis,(int(0.8*frame_size[1]), int( 0.1*frame_size[0])),0, 0.75, (255,255,255),2)
+#                 cv2.putText(frame, y_axis,(int(0.8*frame_size[1]), int( 0.2*frame_size[0])),0, 0.75, (255,255,255),2)
+
+
+
+
+        #Boom added ------------------------------------------------------------------
+        x_axis=""
+        y_axis=""
+        if(drone_track_x<0):
+            print("move_right ",drone_track_x*-1)
+            x_axis=f"move_right {drone_track_x*-1}"
+        
+        else:
+            print("move left ",drone_track_x)
+            x_axis=f"move left {drone_track_x}"
+        if(drone_track_y>0):
+            print("move up",drone_track_y)
+            y_axis=f"move up {drone_track_y}"
+        else:
+            print("move down",drone_track_y*-1)
+            y_axis=f"move down {drone_track_y*-1}"
+        
+        # cv2.putText(frame, f"tracking object {drone_track_id}",(int(0.8*frame_size[1]), int( 0.05*frame_size[0])),0, 0.75, (255,0,0),2)
+        # cv2.putText(frame, x_axis,(int(0.8*frame_size[1]), int( 0.15*frame_size[0])),0, 0.75, (255,0,0),2)
+        # cv2.putText(frame, y_axis,(int(0.8*frame_size[1]), int( 0.25*frame_size[0])),0, 0.75, (255,0,0),2)
+        cv2.line(frame, (int(box_mid_x),int(box_mid_y)),(int(midx),int(midy)), (255,0,0),1)
+        
+        
+         # For now  we are assuming we at these coordinates
+        dronePresentCoordinates=[50.06,30.84]
+
+        # in meters
+        presentAltitude=10
+
+        temp=FramesToCoordinatesAndDistance(dronePresentCoordinates,[midx,midy],[box_mid_x,box_mid_y],presentAltitude,[frame_size[1],frame_size[0]])
+        
+        # for printing on image
+        tempstr=f"angle with north : {temp['bearing']}, shortest distance : {temp['dist']} meters "
+        cv2.putText(frame, tempstr,(int(0.01*frame_size[1]),  int( 0.05*frame_size[0])),0, 0.75, (255,0,0),2)
+        
+        tempstr=f"dist_x_meters: {temp['dist_x_meters']}, dist_y_meters: {temp['dist_y_meters']}"
+        cv2.putText(frame, tempstr,(int(0.01*frame_size[1]),  int( 0.15*frame_size[0])),0, 0.75, (255,0,0),2)
+        
+        tempstr=f"newLongitude: {temp['newLongitude']}, newLatitude:  {temp['newLatitude']}"
+        cv2.putText(frame, tempstr,(int(0.01*frame_size[1]),  int( 0.25*frame_size[0])),0, 0.75, (255,0,0),2)
+        
+        
         # calculate frames per second of running detections
         fps = 1.0 / (time.time() - start_time)
         print("FPS: %.2f" % fps)
+#         print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         

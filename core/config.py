@@ -51,3 +51,21 @@ __C.TEST.SCORE_THRESHOLD      = 0.25
 __C.TEST.IOU_THRESHOLD        = 0.5
 
 
+# Added for more functionalities by Boom
+
+#These should be changed with Camera
+__C.Coordinates     	    = edict()
+
+#At a particular height "altitude" meters, A camera can see land of width "x_width" meters and breadth "y_width" meters
+
+#width camera is able to see in meters
+__C.Coordinates.x_width    =  1.0
+
+#breadth the camera is able to see in meters
+__C.Coordinates.y_width     = 1.5
+
+#height the camera is at in meters
+__C.Coordinates.height     = 2.0
+
+
+
